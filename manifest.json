@@ -1,0 +1,9 @@
+{
+  "name": "Duodopa / Lecigon Delivery Split Calculator",
+  "short_name": "Duodopa Split",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#F4F6F5",
+  "theme_color": "#0F6E63",
+  "icons": []
+}
