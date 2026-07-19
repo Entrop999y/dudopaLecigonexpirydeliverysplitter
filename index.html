@@ -1,459 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Duodopa / Lecigon Delivery Split Calculator</title>
-<style>
-  :root{
-    --bg:#F4F6F5;
-    --card:#FFFFFF;
-    --ink:#1B2A2E;
-    --muted:#5B6B6E;
-    --teal:#0F6E63;
-    --teal-dark:#0A4F47;
-    --safe:#1E7A3D;
-    --safe-bg:#E9F6EC;
-    --danger:#B3261E;
-    --danger-bg:#FBEAE9;
-    --line:#DCE3E2;
-    --amber:#8A5A00;
-    --amber-bg:#FCF3DC;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    background:var(--bg);
-    color:var(--ink);
-    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    padding:32px 16px 80px;
-  }
-  .wrap{max-width:900px;margin:0 auto;}
-  header{margin-bottom:28px;}
-  .eyebrow{
-    font-family:'JetBrains Mono','Courier New',monospace;
-    font-size:12px;
-    letter-spacing:0.14em;
-    text-transform:uppercase;
-    color:var(--teal);
-    margin:0 0 6px;
-  }
-  h1{
-    font-size:26px;
-    margin:0 0 8px;
-    line-height:1.25;
-    color:var(--teal-dark);
-  }
-  .sub{color:var(--muted);font-size:14.5px;line-height:1.5;max-width:640px;}
-  .card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:22px 24px;
-    margin-bottom:20px;
-  }
-  .card h2{
-    font-size:14px;
-    text-transform:uppercase;
-    letter-spacing:0.06em;
-    color:var(--teal-dark);
-    margin:0 0 16px;
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-  .card h2 .n{
-    background:var(--teal);
-    color:#fff;
-    width:20px;height:20px;
-    border-radius:50%;
-    display:inline-flex;align-items:center;justify-content:center;
-    font-size:11.5px;
-    font-family:'JetBrains Mono',monospace;
-  }
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;}
-  label{
-    display:block;
-    font-size:12.5px;
-    color:var(--muted);
-    margin-bottom:5px;
-    font-weight:600;
-  }
-  input, select{
-    width:100%;
-    padding:9px 10px;
-    border:1px solid var(--line);
-    border-radius:6px;
-    font-size:14.5px;
-    font-family:'JetBrains Mono','Courier New',monospace;
-    color:var(--ink);
-    background:#fcfdfd;
-  }
-  input:focus, select:focus{outline:2px solid var(--teal);outline-offset:1px;border-color:var(--teal);}
-  .field{margin-bottom:4px;}
-  .row-note{font-size:12px;color:var(--muted);margin-top:6px;}
+ // Duodopa/Lecigon split calculator — offline cache
+// Bump CACHE_NAME any time you update index.html so the new version gets fetched.
+const CACHE_NAME = 'duodopa-split-v1';
+const CORE_ASSETS = [
+  './',
+  'index.html',
+  'manifest.json'
+];
 
-  .batches{display:flex;flex-direction:column;gap:10px;}
-  .batch-row{
-    display:grid;
-    grid-template-columns:1fr 1fr auto;
-    gap:10px;
-    align-items:end;
-    padding-bottom:10px;
-    border-bottom:1px dashed var(--line);
-  }
-  .batch-row:last-child{border-bottom:none;padding-bottom:0;}
-  .rm-btn{
-    background:none;border:1px solid var(--line);color:var(--danger);
-    border-radius:6px;padding:9px 12px;cursor:pointer;font-size:13px;
-    height:38px;
-  }
-  .rm-btn:hover{background:var(--danger-bg);}
-  .add-btn{
-    margin-top:14px;
-    background:#fff;
-    border:1px dashed var(--teal);
-    color:var(--teal-dark);
-    padding:9px 14px;
-    border-radius:6px;
-    cursor:pointer;
-    font-size:13.5px;
-    font-weight:600;
-  }
-  .add-btn:hover{background:#EAF4F2;}
-
-  .calc-btn{
-    width:100%;
-    background:var(--teal);
-    color:#fff;
-    border:none;
-    padding:13px;
-    border-radius:8px;
-    font-size:15px;
-    font-weight:700;
-    letter-spacing:0.01em;
-    cursor:pointer;
-    margin-top:4px;
-  }
-  .calc-btn:hover{background:var(--teal-dark);}
-
-  #results{display:none;}
-  .verdict{
-    padding:16px 18px;
-    border-radius:8px;
-    margin-bottom:16px;
-    font-size:15px;
-    line-height:1.55;
-  }
-  .verdict.safe{background:var(--safe-bg);color:var(--safe);border:1px solid #bfe3c9;}
-  .verdict.danger{background:var(--danger-bg);color:var(--danger);border:1px solid #f0c6c3;}
-  .verdict b{font-weight:800;}
-
-  table{width:100%;border-collapse:collapse;font-size:13.5px;}
-  th{
-    text-align:left;
-    font-size:11.5px;
-    text-transform:uppercase;
-    letter-spacing:0.05em;
-    color:var(--muted);
-    padding:8px 10px;
-    border-bottom:2px solid var(--line);
-  }
-  td{
-    padding:10px;
-    border-bottom:1px solid var(--line);
-    font-family:'JetBrains Mono','Courier New',monospace;
-    font-size:13px;
-  }
-  .status-ok{color:var(--safe);font-weight:700;}
-  .status-bad{color:var(--danger);font-weight:700;}
-  .status-partial{color:var(--amber);font-weight:700;}
-
-  .plan{
-    background:#fff;
-    border:1px solid var(--line);
-    border-radius:8px;
-    padding:16px 18px;
-    margin-top:14px;
-  }
-  .plan-item{
-    display:flex;
-    justify-content:space-between;
-    padding:8px 0;
-    border-bottom:1px solid var(--line);
-    font-size:14px;
-  }
-  .plan-item:last-child{border-bottom:none;}
-  .plan-item .qty{font-family:'JetBrains Mono',monospace;font-weight:700;}
-  .footnote{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5;}
-  @media (max-width:520px){
-    .batch-row{grid-template-columns:1fr 1fr;}
-    .rm-btn{grid-column:span 2;}
-  }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <p class="eyebrow">TCP Homecare · Cassette dosed pumps</p>
-    <h1>Duodopa / Lecigon delivery split calculator</h1>
-    <p class="sub">Checks whether picked cassette stock will still be in date by the time the patient reaches it, based on delivery date and daily dose. If not, tells you exactly how many packs to swap for later-dated stock.</p>
-  </header>
-
-  <div class="card">
-    <h2><span class="n">1</span>Delivery &amp; dose</h2>
-    <div class="grid">
-      <div class="field">
-        <label for="product">Product</label>
-        <select id="product">
-          <option>Duodopa</option>
-          <option>Lecigon</option>
-          <option>Other cassette product</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="deliveryDate">Delivery date</label>
-        <input type="date" id="deliveryDate">
-      </div>
-      <div class="field">
-        <label for="dose">Dose (cassettes/day)</label>
-        <input type="number" id="dose" step="0.1" min="0.1" value="2">
-      </div>
-      <div class="field">
-        <label for="packSize">Cassettes per pack</label>
-        <input type="number" id="packSize" step="1" min="1" value="7">
-      </div>
-      <div class="field">
-        <label for="coverDays">Days to cover until next delivery</label>
-        <input type="number" id="coverDays" step="1" min="1" value="28">
-      </div>
-      <div class="field">
-        <label for="totalPacks">Total packs required (auto)</label>
-        <input type="number" id="totalPacks" step="1" min="1">
-      </div>
-    </div>
-    <p class="row-note">Total packs required is calculated from cover days × dose ÷ cassettes per pack (rounded up). Override it manually if the order quantity differs.</p>
-  </div>
-
-  <div class="card">
-    <h2><span class="n">2</span>Picked stock, earliest expiry first</h2>
-    <div class="batches" id="batchList"></div>
-    <button class="add-btn" id="addBatch" type="button">+ Add another expiry batch</button>
-    <p class="row-note">Add a row for each expiry date in the picked stock (e.g. a short-dated batch and a longer-dated batch). Any shortfall against the total required is assumed fillable from ample-dated shelf stock.</p>
-  </div>
-
-  <button class="calc-btn" id="calcBtn">Check the split</button>
-
-  <div id="results">
-    <div class="card">
-      <h2><span class="n">3</span>Result</h2>
-      <div id="verdict"></div>
-      <table>
-        <thead>
-          <tr><th>Batch (expiry)</th><th>Picked</th><th>Safe to send</th><th>Swap out</th><th>Status</th></tr>
-        </thead>
-        <tbody id="resultBody"></tbody>
-      </table>
-      <div class="plan" id="planBox"></div>
-      <p class="footnote" id="footnote"></p>
-    </div>
-  </div>
-</div>
-
-<script>
-const batchList = document.getElementById('batchList');
-let batchCount = 0;
-
-function addBatchRow(expiry='', packs=''){
-  batchCount++;
-  const id = 'b'+batchCount;
-  const row = document.createElement('div');
-  row.className = 'batch-row';
-  row.dataset.id = id;
-  row.innerHTML = `
-    <div class="field">
-      <label>Expiry date</label>
-      <input type="date" class="b-expiry" value="${expiry}">
-    </div>
-    <div class="field">
-      <label>Packs picked at this expiry</label>
-      <input type="number" class="b-packs" min="0" step="1" value="${packs}">
-    </div>
-    <button class="rm-btn" type="button" onclick="this.closest('.batch-row').remove()">Remove</button>
-  `;
-  batchList.appendChild(row);
-}
-addBatchRow();
-addBatchRow();
-
-document.getElementById('addBatch').addEventListener('click', ()=>addBatchRow());
-
-// auto-fill total packs required whenever dose/coverDays/packSize change
-function refreshTotalPacks(){
-  const dose = parseFloat(document.getElementById('dose').value) || 0;
-  const coverDays = parseFloat(document.getElementById('coverDays').value) || 0;
-  const packSize = parseFloat(document.getElementById('packSize').value) || 1;
-  const totalCassettes = dose * coverDays;
-  const packs = Math.ceil(totalCassettes / packSize - 1e-9);
-  document.getElementById('totalPacks').value = packs;
-}
-['dose','coverDays','packSize'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', refreshTotalPacks);
+// On install: cache the core files. Each file is cached independently so a
+// missing optional file (e.g. icon.png not yet added) can't break the install.
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return Promise.all(
+        CORE_ASSETS.map((url) =>
+          cache.add(url).catch((err) => {
+            console.log('Skipping asset not found:', url, err);
+          })
+        )
+      );
+    })
+  );
 });
-refreshTotalPacks();
 
-function dayOffset(fromDate, toDate){
-  // whole days between two date-only Date objects
-  const MS = 24*60*60*1000;
-  return Math.round((toDate - fromDate)/MS);
-}
-function addDays(date, n){
-  const d = new Date(date);
-  d.setDate(d.getDate()+n);
-  return d;
-}
-function fmt(date){
-  return date.toLocaleDateString('en-IE', {day:'2-digit',month:'2-digit',year:'numeric'});
-}
-
-document.getElementById('calcBtn').addEventListener('click', ()=>{
-  const deliveryStr = document.getElementById('deliveryDate').value;
-  const dose = parseFloat(document.getElementById('dose').value);
-  const packSize = parseFloat(document.getElementById('packSize').value);
-  const totalPacksRequired = parseFloat(document.getElementById('totalPacks').value);
-
-  if(!deliveryStr || !dose || !packSize || !totalPacksRequired){
-    alert('Please fill in delivery date, dose, cassettes per pack and total packs required.');
-    return;
-  }
-  const deliveryDate = new Date(deliveryStr+'T00:00:00');
-  const totalCassettesRequired = totalPacksRequired * packSize;
-
-  // gather batches
-  const rows = [...batchList.querySelectorAll('.batch-row')];
-  let batches = rows.map(r=>{
-    const expiryStr = r.querySelector('.b-expiry').value;
-    const packs = parseFloat(r.querySelector('.b-packs').value) || 0;
-    return {
-      expiryStr,
-      expiry: expiryStr ? new Date(expiryStr+'T00:00:00') : null,
-      packsPicked: packs
-    };
-  }).filter(b=>b.expiry && b.packsPicked>0);
-
-  // sort earliest expiry first (FEFO)
-  batches.sort((a,b)=>a.expiry-b.expiry);
-
-  let runningCassettes = 0;
-  const results = [];
-
-  for(const b of batches){
-    if(runningCassettes >= totalCassettesRequired) break;
-    const startIdx = runningCassettes;
-    const cassettesInBatch = b.packsPicked * packSize;
-    const effective = Math.min(cassettesInBatch, totalCassettesRequired - startIdx);
-    const endIdx = startIdx + effective;
-    const lastUseDayOffset = Math.ceil(endIdx/dose) - 1;
-    const lastUseDate = addDays(deliveryDate, lastUseDayOffset);
-    const expiryDayOffset = dayOffset(deliveryDate, b.expiry);
-    const safe = lastUseDayOffset <= expiryDayOffset;
-
-    let safePacks, swapPacks, status, lastUseDateShown = lastUseDate;
-    const picksUsedThisBatch = effective / packSize; // packs actually needed from this batch (may be < packsPicked if requirement already nearly met)
-
-    if(safe){
-      safePacks = picksUsedThisBatch;
-      swapPacks = b.packsPicked - picksUsedThisBatch; // extra picked but not needed at all (e.g. over-picked)
-      status = swapPacks > 0.0001 ? 'partial' : 'ok';
-      runningCassettes += effective;
-    } else {
-      // solve max whole packs p such that last use date <= expiry
-      // p <= ((expiryDayOffset+1)*dose - startIdx) / packSize
-      let pMax = Math.floor(((expiryDayOffset+1)*dose - startIdx) / packSize + 1e-9);
-      pMax = Math.max(0, Math.min(pMax, b.packsPicked));
-      safePacks = pMax;
-      swapPacks = b.packsPicked - pMax;
-      status = pMax > 0 ? 'partial-unsafe' : 'bad';
-      const safeCassettes = pMax * packSize;
-      runningCassettes += Math.min(safeCassettes, totalCassettesRequired - startIdx);
-      if(pMax > 0){
-        const safeLastIdx = startIdx + safeCassettes;
-        lastUseDateShown = addDays(deliveryDate, Math.ceil(safeLastIdx/dose)-1);
-      } else {
-        lastUseDateShown = null;
-      }
-    }
-
-    results.push({
-      expiryStr: fmt(b.expiry),
-      picked: b.packsPicked,
-      safePacks,
-      swapPacks,
-      status,
-      lastUseDate: lastUseDateShown,
-      wouldHaveBeenUsedOn: lastUseDate
-    });
-  }
-
-  const totalSafeFromPicked = results.reduce((s,r)=>s+r.safePacks,0);
-  const shortfallPacks = Math.max(0, totalPacksRequired - totalSafeFromPicked);
-  const overallLastUseDate = addDays(deliveryDate, Math.ceil(totalCassettesRequired/dose)-1);
-
-  // render
-  const body = document.getElementById('resultBody');
-  body.innerHTML = '';
-  results.forEach(r=>{
-    let statusHTML;
-    if(r.status==='ok') statusHTML = '<span class="status-ok">All in date</span>';
-    else if(r.status==='partial') statusHTML = '<span class="status-ok">In date (not all needed)</span>';
-    else if(r.status==='partial-unsafe') statusHTML = `<span class="status-bad">${r.swapPacks} pack(s) would expire before use</span>`;
-    else statusHTML = '<span class="status-bad">None of this batch is safe</span>';
-
-    body.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td>${r.expiryStr}</td>
-        <td>${r.picked}</td>
-        <td>${r.safePacks}</td>
-        <td>${r.swapPacks>0 ? r.swapPacks : '—'}</td>
-        <td>${statusHTML}</td>
-      </tr>
-    `);
-  });
-
-  const verdictEl = document.getElementById('verdict');
-  const anyUnsafe = results.some(r=>r.status==='partial-unsafe'||r.status==='bad') || shortfallPacks>0;
-  if(!anyUnsafe && shortfallPacks===0){
-    verdictEl.className = 'verdict safe';
-    verdictEl.innerHTML = `<b>All good.</b> All ${totalPacksRequired} packs picked will be used within date. Last cassette opens around <b>${fmt(overallLastUseDate)}</b>.`;
-  } else {
-    verdictEl.className = 'verdict danger';
-    const swapTotal = results.reduce((s,r)=>s + (r.status.includes('unsafe')||r.status==='bad' ? r.swapPacks : 0), 0) + shortfallPacks;
-    verdictEl.innerHTML = `<b>Split needed.</b> As picked, some packs would still be in the patient's possession after their printed expiry. Swap <b>${swapTotal}</b> pack(s) for stock expiring on or after <b>${fmt(overallLastUseDate)}</b> to safely cover the full ${totalPacksRequired}-pack order.`;
-  }
-
-  const planBox = document.getElementById('planBox');
-  let planHTML = '';
-  results.forEach(r=>{
-    if(r.safePacks>0){
-      planHTML += `<div class="plan-item"><span>Send from batch expiring ${r.expiryStr}</span><span class="qty">${r.safePacks} pack(s)</span></div>`;
-    }
-  });
-  if(shortfallPacks>0){
-    planHTML += `<div class="plan-item"><span>Top up with longer-dated stock (must expire ≥ ${fmt(overallLastUseDate)})</span><span class="qty">${shortfallPacks} pack(s)</span></div>`;
-  }
-  results.forEach(r=>{
-    if(r.status==='partial-unsafe' && r.swapPacks>0){
-      planHTML += `<div class="plan-item"><span>Remove from batch expiring ${r.expiryStr} (would expire before use)</span><span class="qty">${r.swapPacks} pack(s)</span></div>`;
-    }
-  });
-  planBox.innerHTML = planHTML || '<div class="plan-item"><span>No changes needed.</span><span class="qty">—</span></div>';
-
-  document.getElementById('footnote').textContent =
-    `Assumes first-expiry-first-out use (patient works through the earliest-dated packs first) and steady daily dosing of ${dose} cassette(s)/day. Recheck if the dosing regimen or delivery date changes.`;
-
-  document.getElementById('results').style.display = 'block';
-  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+// Remove old caches when a new version activates
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      )
+    )
+  );
+  self.clients.claim();
 });
-</script>
-</body>
-</html>
+
+// Fetch strategy: try the network first (so you always get the latest version
+// when you have signal), fall back to the cached copy when offline.
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        // Save a fresh copy for next time we're offline
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => {
+        // No signal — serve whatever we have cached
+        return caches.match(event.request).then((cached) => {
+          return cached || caches.match('index.html');
+        });
+      })
+  );
+});
